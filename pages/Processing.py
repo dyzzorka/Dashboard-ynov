@@ -4,11 +4,10 @@ import pandas as pd
 upload = st.file_uploader("Choose file", type="csv")
 if upload != None:
     
-    df = pd.read_csv(upload, delimiter=",")
+    df = pd.read_csv(upload)
     
-    columns = df.columns
     
-    selected = st.multiselect("Select columns", columns)
+    selected = st.multiselect("Select columns", df.columns)
     
     edited_df = st.data_editor(df[selected])
     
