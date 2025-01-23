@@ -77,6 +77,8 @@ if upload != None:
                 st.session_state.deleted_rows.append(filtered_df.loc[idx].to_dict())
             filtered_df.drop(index=row_indices, inplace=True)
 
+
+# ajouté le rename au cache
         if st.checkbox('Active rename column', True):
             col1, col2 = st.columns([1, 2])
             with col1:
