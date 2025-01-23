@@ -13,29 +13,84 @@ upload = st.sidebar.file_uploader("Choose .csv file", type="csv")
 if upload != None:
     df = pd.read_csv(upload)
     
-    choose = st.sidebar.radio("Choose wath u went to do with ur data", ["Data Modification", "Data Visualisation"], horizontal=True)
+    choose = st.sidebar.radio("Choose what you went to do with your data", ["Data Modification", "Data Visualisation"], horizontal=True)
 
     if choose == "Data Modification":
         st.title("Data Modification")
         
         selected = df.columns
-        lenrows = (0, len(df))
-        filtered_df = df
-        
-        if st.checkbox('Display columns selector', True):
+        start, end = (0, len(df))
+        filtered_df = df.copy()
+        if st.checkbox('Active columns selector', True):
             selected = st.multiselect("Unselect columns", df.columns, default=df.columns)
-        
-        if st.checkbox('Display row filter', True):
-            lenrows = st.slider("Select quantity rows", 0, len(df), (0, len(df)))
             
-        if st.checkbox('Diplay value filter', True):
-            
-            col = st.selectbox("Selectioné une colone", selected.insert(0, "None"))
+        if "deleted_rows" not in st.session_state:
+            st.session_state.deleted_rows = []
+        if 'filters' not in st.session_state:
+            st.session_state.filters = []
+        if 'row_range' not in st.session_state:
+            st.session_state.row_range = (0, len(df))
+
+        if st.checkbox('Active value filter', True):
+
+            col = st.selectbox("Select column", ["None"] + df.columns.tolist())
+
             if col != "None":
-                value = st.selectbox("Selectioné une valeur", df[col].unique().tolist())
-                filtered_df = df[df[col] == value]
+                value = st.selectbox("Select value", df[col].unique().tolist())
+
+                if st.button("Add Filter"):
+                    if (col, value) not in st.session_state.filters:
+                        st.session_state.filters.append((col, value))
+
+            if st.session_state.filters:
+                filters_display = [f"{col}: {val}" for col, val in st.session_state.filters]
+                selected_filters = st.multiselect("Filters apply :", filters_display, default=filters_display)
+
+                st.session_state.filters = [(col, val) for col, val in st.session_state.filters if f"{col}: {val}" in selected_filters]
+
+                filtered_df = df.copy()
+                for col, val in st.session_state.filters:
+                    filtered_df = filtered_df[filtered_df[col] == val]
+
+            else:
+                st.write("Any filters apply.")
+                
+        if st.checkbox('Active row filter', True):
+            max_rows = len(filtered_df)
+
+            if st.session_state.row_range[1] > max_rows:
+                st.session_state.row_range = (0, max_rows)
+
+            st.session_state.row_range = st.slider(
+                "Select quantity rows",
+                0, max_rows,
+                st.session_state.row_range
+            )
+
+            start, end = st.session_state.row_range
+            filtered_df = filtered_df.iloc[start:end]
+        
+        if st.checkbox('Active delete rows', True):
+            row_indices = st.multiselect("Select rows to delete", filtered_df.index.tolist())
+
+            for idx in row_indices:
+                st.session_state.deleted_rows.append(filtered_df.loc[idx].to_dict())
+            filtered_df.drop(index=row_indices, inplace=True)
+
+        if st.checkbox('Active rename column', True):
+            col1, col2 = st.columns([1, 2])
+            with col1:
+                column_to_rename = st.selectbox("Select column to rename", filtered_df.columns.tolist())
+            with col2:
+                new_column_name = st.text_input("Enter new column name", value=column_to_rename)
             
-        edited_df = st.data_editor(filtered_df[selected].iloc[lenrows[0]:lenrows[1] + 1])
+            if st.button("Rename Column"):
+                if new_column_name and column_to_rename in filtered_df.columns:
+                    filtered_df.rename(columns={column_to_rename: new_column_name}, inplace=True)
+                    selected = [new_column_name if col == column_to_rename else col for col in selected]
+                    st.success(f"Column '{column_to_rename}' renamed to '{new_column_name}'")
+                    
+        edited_df = st.data_editor(filtered_df[selected])
     
         st.download_button(
             label="Download",
