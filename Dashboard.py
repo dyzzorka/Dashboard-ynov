@@ -13,6 +13,11 @@ st.set_page_config(
 def load_data():
     return pd.read_csv("https://raw.githubusercontent.com/Quera-fr/Python-Programming/refs/heads/main/data.csv")
 
+try:
+    st.sidebar.write(st.secrets['API_KEY'])
+except:
+    st.error('il n\'y a pas de secret')
+
 df = load_data()
 
 st.title('My Dashboard')
