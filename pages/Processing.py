@@ -4,7 +4,7 @@ import pandas as pd
 upload = st.file_uploader("Choose file", type="csv")
 if upload != None:
     
-    df = pd.read_csv(upload, delimiter=";")
+    df = pd.read_csv(upload, delimiter=",")
     
     columns = df.columns
     
